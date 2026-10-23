@@ -38,11 +38,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LifeQuestScreen() {
 
+
     val quests = remember {
         listOf(
-            Quest(1, "Study Kotlin", 50),
-            Quest(2, "Solve DSA Problems", 100),
-            Quest(3, "Workout", 30)
+            Quest(1, "Study Kotlin", 50, Difficulty.EASY),
+            Quest(2, "Solve DSA Problems", 50, Difficulty.MEDIUM),
+            Quest(3, "Workout", 30, Difficulty.HARD)
         )
     }
 
@@ -50,13 +51,17 @@ fun LifeQuestScreen() {
         mutableStateOf(listOf<Int>())
     }
 
-    val state = completedIds.fold(
-        QuestState(quests)
-    ) { current, id ->
-        completeQuest(current, id)
+
+    val state = completedIds.fold(QuestState(quests)) { current, id ->
+        when (val result = completeQuest(current, id)) {
+            is QuestResult.Success -> result.state
+            QuestResult.AlreadyCompleted -> current
+            QuestResult.NotFound -> current
+        }
     }
 
-    val level = state.totalXP / 100 + 1
+
+    val level = state.level
     val levelProgress = (state.totalXP % 100) / 100f
     val completedCount = state.quests.count { it.completed }
 
@@ -150,10 +155,17 @@ fun LifeQuestScreen() {
                                     fontWeight = FontWeight.Medium
                                 )
 
+
                                 Text(
-                                    text = "+${quest.xp} XP",
+                                    text = quest.difficulty.name,
+                                    color = Color.LightGray
+                                )
+
+                                Text(
+                                    text = "+${quest.xp * quest.difficulty.multiplier} XP",
                                     color = accent
                                 )
+
                             }
 
                             Button(
