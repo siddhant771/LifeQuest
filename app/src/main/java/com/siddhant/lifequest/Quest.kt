@@ -14,7 +14,7 @@ data class Quest(
     val id: Int,
     val title: String,
     val xp: Int,
-    /*day2 */val difficulty: Difficulty = Difficulty.EASY,
+    val difficulty: Difficulty = Difficulty.EASY,
     val completed: Boolean = false
 )
 
@@ -25,7 +25,7 @@ data class QuestState(
     val level : Int
         get() = totalXP/100+1
 }
-/*day2*/ sealed class QuestResult {
+sealed class QuestResult {
     data class Success(val state: QuestState) : QuestResult()
     data object AlreadyCompleted : QuestResult()
     data object NotFound : QuestResult()
