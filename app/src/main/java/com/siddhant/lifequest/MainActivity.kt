@@ -2,9 +2,12 @@
 package com.siddhant.lifequest
 
 import android.os.Bundle
+import android.widget.Button
+import android.widget.Space
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,42 +159,14 @@ fun LifeQuestScreen() {
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-
             Spacer(Modifier.height(20.dp))
 
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = cardColor
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(20.dp)) {
 
-                    Text(
-                        text = "LEVEL ${state.level}",
-                        color = accentColor,
-                        fontWeight = FontWeight.Bold
-                    )
+            XPWidget(
+                totalXP=state.totalXP,
+                level=state.level
+            )
 
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = "${state.totalXP} TOTAL XP",
-                        color = Color.White
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    LinearProgressIndicator(
-                        progress = {
-                            (state.totalXP % 100) / 100f
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = accentColor
-                    )
-                }
-            }
 
             Spacer(Modifier.height(24.dp))
 
@@ -209,48 +184,110 @@ fun LifeQuestScreen() {
             ) {
                 items(state.quests, key = { it.id }) { quest ->
 
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = cardColor
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-
-                            Text(
-                                text = quest.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(Modifier.height(6.dp))
-
-                            val reward =
-                                quest.xp * quest.difficulty.multiplier
-
-                            Text(
-                                text = "${quest.difficulty.name} • +$reward XP",
-                                color = accentColor
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Button(
-                                enabled = !quest.completed,
-                                onClick = {
-                                    completedIds =
-                                        completedIds + quest.id
-                                }
-                            ) {
-                                Text(
-                                    if (quest.completed) "Completed ✓"
-                                    else "Finish Quest"
-                                )
+                    QuestCard(
+                        quest = quest,
+                        onComplete ={
+                            if(!quest.completed){
+                                completedIds = completedIds + quest.id
                             }
                         }
-                    }
+                    )
                 }
             }
         }
     }
 }
+@Composable
+fun XPProgress(progress:Float){
+    LinearProgressIndicator(
+        progress={progress},
+        modifier=Modifier.fillMaxWidth(),
+        color=accentColor,
+        trackColor =  Color(0xFF334155)
+    )
+}
+
+@Composable
+fun XPWidget(totalXP:Int,level:Int){
+    val currentXP=totalXP%100
+    val progress = currentXP/100f
+    Card(
+        modifier=Modifier.fillMaxWidth(),
+        colors= CardDefaults.cardColors(
+            containerColor = cardColor
+        ),
+        shape = RoundedCornerShape(16.dp)
+
+    ){
+        Column(Modifier.padding(20.dp)) {
+            Text(
+                text="LEVEL $level",
+                color=accentColor,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier=Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                Text(
+                    text = "$totalXP TOTAL XP",
+                    color=Color.White
+                )
+                Text(
+                    text = "$currentXP / 100 XP",
+                    color=Color.LightGray
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            XPProgress(progress)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "${100 - currentXP} XP until Level ${level+1}",
+                color=Color.LightGray
+            )
+        }
+    }
+
+}
+@Composable
+fun QuestCard(
+    quest: Quest,
+    onComplete: () -> Unit
+){
+    val reward = quest.xp * quest.difficulty.multiplier
+    Card(
+        modifier=Modifier.fillMaxWidth(),
+        colors= CardDefaults.cardColors(
+            containerColor = cardColor
+        ),
+        shape=RoundedCornerShape(14.dp)
+    ){
+        Column(Modifier.padding(16.dp)){
+            Text(
+                text=quest.title,
+                color=Color.White,
+                fontWeight = FontWeight.Bold
+
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text="${quest.difficulty.name} +$reward XP", color = accentColor
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onComplete,
+                enabled = !quest.completed
+            ){
+                Text(
+                    if(quest.completed){
+                        "Completed"
+                    } else{
+                        "Finish Quest"
+                    }
+                )
+            }
+        }
+    }
+}
+
