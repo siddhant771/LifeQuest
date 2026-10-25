@@ -121,11 +121,13 @@ fun OnboardingScreen(
 @Composable
 fun LifeQuestScreen() {
 
-    val quests = remember {
-        listOf(
-            Quest(1, "Study Kotlin", 50, Difficulty.EASY),
-            Quest(2, "Solve DSA Problems", 50, Difficulty.MEDIUM),
-            Quest(3, "Workout", 30, Difficulty.HARD)
+    var quests by remember {
+        mutableStateOf(
+            listOf(
+                Quest(1, "Study Kotlin", 50, Difficulty.EASY),
+                Quest(2, "Solve DSA Problems", 50, Difficulty.MEDIUM),
+                Quest(3, "Workout", 30, Difficulty.HARD)
+            )
         )
     }
 
@@ -166,6 +168,16 @@ fun LifeQuestScreen() {
                 totalXP=state.totalXP,
                 level=state.level
             )
+            CreateQuestForm(
+                onCreateQuest = {title,xp,difficulty -> val nextId = (quests.maxOfOrNull { it.id } ?: 0) +1
+                    quests = quests + Quest(
+                        id=nextId,
+                        title=title,
+                        xp=xp,
+                        difficulty = difficulty
+                    )
+                }
+            )
 
 
             Spacer(Modifier.height(24.dp))
@@ -197,6 +209,149 @@ fun LifeQuestScreen() {
         }
     }
 }
+
+@Composable
+fun CreateQuestForm(
+    onCreateQuest: (String, Int, Difficulty) -> Unit
+) {
+    var title by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var xpText by rememberSaveable {
+        mutableStateOf("50")
+    }
+
+    var difficultyName by rememberSaveable {
+        mutableStateOf(Difficulty.EASY.name)
+    }
+
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    var errorMessage by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    val difficulty = Difficulty.valueOf(difficultyName)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Create New Quest",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Quest title
+            OutlinedTextField(
+                value = title,
+                onValueChange = {
+                    title = it
+                    errorMessage = ""
+                },
+                label = { Text("Quest title") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Base XP
+            OutlinedTextField(
+                value = xpText,
+                onValueChange = {
+                    xpText = it
+                    errorMessage = ""
+                },
+                label = { Text("Base XP reward") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Difficulty dropdown
+            Box {
+                OutlinedButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Difficulty: ${difficulty.name}")
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {
+                        expanded = false
+                    }
+                ) {
+                    Difficulty.values().forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.name) },
+                            onClick = {
+                                difficultyName = option.name
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Validation error
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // Create quest
+            Button(
+                onClick = {
+                    val cleanTitle = title.trim()
+                    val xp = xpText.toIntOrNull()
+
+                    when {
+                        cleanTitle.isEmpty() -> {
+                            errorMessage = "Enter a quest title."
+                        }
+
+                        xp == null || xp <= 0 -> {
+                            errorMessage =
+                                "Enter a valid positive XP."
+                        }
+
+                        else -> {
+                            onCreateQuest(
+                                cleanTitle,
+                                xp,
+                                difficulty
+                            )
+
+                            // Reset form after success
+                            title = ""
+                            xpText = "50"
+                            difficultyName = Difficulty.EASY.name
+                            errorMessage = ""
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Create Quest")
+            }
+        }
+    }
+}
+
 @Composable
 fun XPProgress(progress:Float){
     LinearProgressIndicator(
