@@ -16,8 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -48,13 +51,14 @@ class MainActivity : ComponentActivity() {
                     surface = cardColor
                 )
             ) {
-                LifeQuestApp()
+                AsyncQuestDemoScreen()
             }
         }
     }
 }
 
 @Composable
+
 fun LifeQuestApp() {
     var onboardingDone by rememberSaveable {
         mutableStateOf(false)
@@ -713,3 +717,49 @@ fun QuestCard(
         }
     }
 }
+@Composable
+fun AsyncQuestSection(
+    viewModel: QuestViewModel
+){
+    val quests by viewModel.quests.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(viewModel) {
+        viewModel.loadQuests()
+    }
+    when{
+        uiState.isLoading -> {
+            CircularProgressIndicator()
+        }
+        uiState.errorMessage != null -> {
+            Column{
+                Text(uiState.errorMessage!!)
+                Button(onClick = {
+                    viewModel.loadQuests()
+                }) {
+                    Text("Retry")
+                }
+            }
+        }
+        else -> {
+            LazyColumn{
+                items(
+                    items =  quests,
+                    key = {
+                        quest -> quest.id
+                    }
+                ){
+                    quest -> Text(quest.title)
+                }
+            }
+        }
+    }
+}
+@Composable
+@Preview(showSystemUi=true)
+fun AsyncQuestDemoScreen(){
+    val questViewModel: QuestViewModel = viewModel()
+    AsyncQuestSection(
+        viewModel=questViewModel
+    )
+}
+
