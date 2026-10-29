@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                     surface = cardColor
                 )
             ) {
-                AsyncQuestDemoScreen()
+                LifeQuestApp()
             }
         }
     }
@@ -142,6 +142,11 @@ fun LifeQuestNavigation() {
         mutableStateOf(listOf<Int>())
     }
 
+    var selectedFilter by rememberSaveable {
+        mutableStateOf(QuestFilter.ALL)
+    }
+
+
     val state = completedIds.fold(QuestState(quests)) { current, id ->
         when (val result = completeQuest(current, id)) {
             is QuestResult.Success -> result.state
@@ -172,8 +177,11 @@ fun LifeQuestNavigation() {
         startDestination = LifeQuestRoutes.DASHBOARD
     ) {
         composable(LifeQuestRoutes.DASHBOARD) {
+
             DashboardScreen(
                 state = state,
+                selectedFilter = selectedFilter,
+                onFilterChange = { selectedFilter = it },
                 onCreateQuest = ::createQuest,
                 onQuestClick = { questId ->
                     navController.navigate(
@@ -185,6 +193,7 @@ fun LifeQuestNavigation() {
                 },
                 onCompleteQuest = ::completeQuestById
             )
+
         }
 
         composable(
@@ -221,14 +230,27 @@ fun LifeQuestNavigation() {
     }
 }
 
+
 @Composable
 fun DashboardScreen(
     state: QuestState,
+    selectedFilter: QuestFilter,
+    onFilterChange: (QuestFilter) -> Unit,
     onCreateQuest: (String, Int, Difficulty) -> Unit,
     onQuestClick: (Int) -> Unit,
     onProfileClick: () -> Unit,
     onCompleteQuest: (Int) -> Unit
 ) {
+    val filteredQuests = when (selectedFilter) {
+        QuestFilter.ALL -> state.quests
+
+        QuestFilter.ACTIVE ->
+            state.quests.filter { !it.completed }
+
+        QuestFilter.COMPLETED ->
+            state.quests.filter { it.completed }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = backgroundColor
@@ -265,7 +287,9 @@ fun DashboardScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            CreateQuestForm(onCreateQuest = onCreateQuest)
+            CreateQuestForm(
+                onCreateQuest = onCreateQuest
+            )
 
             Spacer(Modifier.height(20.dp))
 
@@ -278,23 +302,72 @@ fun DashboardScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.quests, key = { it.id }) { quest ->
-                    Column {
-                        QuestCard(
-                            quest = quest,
-                            onComplete = {
-                                onCompleteQuest(quest.id)
-                            }
-                        )
+                QuestFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = selectedFilter == filter,
+                        onClick = {
+                            onFilterChange(filter)
+                        },
+                        label = {
+                            Text(
+                                filter.name
+                                    .lowercase()
+                                    .replaceFirstChar {
+                                        it.uppercase()
+                                    }
+                            )
+                        }
+                    )
+                }
+            }
 
-                        TextButton(
-                            onClick = { onQuestClick(quest.id) }
-                        ) {
-                            Text("View Quest Details →")
+            Spacer(Modifier.height(12.dp))
+
+            if (filteredQuests.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = when (selectedFilter) {
+                            QuestFilter.ALL -> "No quests yet. Create one!"
+                            QuestFilter.ACTIVE -> "No active quests."
+                            QuestFilter.COMPLETED -> "No completed quests yet."
+                        },
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = filteredQuests,
+                        key = { quest -> quest.id }
+                    ) { quest ->
+                        Column {
+                            QuestCard(
+                                quest = quest,
+                                onComplete = {
+                                    onCompleteQuest(quest.id)
+                                }
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    onQuestClick(quest.id)
+                                }
+                            ) {
+                                Text("View Quest Details →")
+                            }
                         }
                     }
                 }
@@ -302,6 +375,7 @@ fun DashboardScreen(
         }
     }
 }
+
 
 @Composable
 fun QuestDetailScreen(
