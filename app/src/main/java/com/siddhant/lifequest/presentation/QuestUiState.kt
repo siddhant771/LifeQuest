@@ -1,6 +1,4 @@
-package com.siddhant.lifequest
-
-import android.os.Message
+package com.siddhant.lifequest.presentation
 
 data class QuestUiState(
     val isLoading: Boolean=false,

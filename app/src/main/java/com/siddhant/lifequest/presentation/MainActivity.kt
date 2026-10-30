@@ -1,5 +1,4 @@
-
-package com.siddhant.lifequest
+package com.siddhant.lifequest.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,6 +25,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.siddhant.lifequest.domain.model.Difficulty
+import com.siddhant.lifequest.domain.model.Quest
+import com.siddhant.lifequest.domain.model.QuestFilter
+import com.siddhant.lifequest.domain.model.QuestResult
+import com.siddhant.lifequest.domain.model.QuestState
+import com.siddhant.lifequest.domain.model.completeQuest
+import dagger.hilt.android.AndroidEntryPoint
+import kotlin.collections.plus
 
 private val backgroundColor = Color(0xFF0B1220)
 private val cardColor = Color(0xFF172338)
@@ -38,7 +45,7 @@ private object LifeQuestRoutes {
 
     fun detail(questId: Int) = "detail/$questId"
 }
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

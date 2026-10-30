@@ -1,5 +1,4 @@
-
-package com.siddhant.lifequest
+package com.siddhant.lifequest.domain.model
 
 enum class QuestFilter {
     ALL,

@@ -1,4 +1,4 @@
-package com.siddhant.lifequest
+package com.siddhant.lifequest.domain.model
 
 
 // day2

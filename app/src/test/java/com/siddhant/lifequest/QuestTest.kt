@@ -3,6 +3,11 @@ package com.siddhant.lifequest
 
 
 
+import com.siddhant.lifequest.domain.model.Difficulty
+import com.siddhant.lifequest.domain.model.Quest
+import com.siddhant.lifequest.domain.model.QuestResult
+import com.siddhant.lifequest.domain.model.QuestState
+import com.siddhant.lifequest.domain.model.completeQuest
 import org.junit.Assert.*
 import org.junit.Test
 
