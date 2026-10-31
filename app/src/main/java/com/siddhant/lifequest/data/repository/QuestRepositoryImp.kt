@@ -1,41 +1,50 @@
 package com.siddhant.lifequest.data.repository
-import javax.inject.Inject
+
+import com.siddhant.lifequest.data.local.QuestDao
+import com.siddhant.lifequest.data.local.QuestEntity
+import com.siddhant.lifequest.domain.model.Difficulty
 import com.siddhant.lifequest.domain.model.Quest
 import com.siddhant.lifequest.domain.repository.QuestRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class QuestRepositoryImp @Inject constructor() : QuestRepository {
-    private val _quests = MutableStateFlow(
-        listOf(
-            Quest(1, "Study Kotlin", 50),
-            Quest(2,"Solve DSA Problems",50),
-            Quest(3,"Workout",30)
-
-        )
-    )
+class QuestRepositoryImpl @Inject constructor(
+    private val questDao: QuestDao
+) : QuestRepository {
 
     override fun getQuests(): Flow<List<Quest>> {
-        return _quests.asStateFlow()
+
+        return questDao.getAllQuests().map { entities ->
+
+            entities.map { entity ->
+
+                Quest(
+                    id = entity.id,
+                    title = entity.title,
+                    xp = entity.xp,
+                    difficulty = Difficulty.valueOf(entity.difficulty),
+                    completed = entity.completed
+                )
+            }
+        }
     }
 
     override suspend fun addQuest(quest: Quest) {
-        _quests.update { current -> current+quest }
 
+        questDao.insertQuest(
+            QuestEntity(
+                id = quest.id,
+                title = quest.title,
+                xp = quest.xp,
+                difficulty = quest.difficulty.name,
+                completed = quest.completed
+            )
+        )
     }
 
     override suspend fun completeQuest(id: Int) {
-        _quests.update { current ->
-            current.map{quest ->
-                if(quest.id == id && !quest.completed ){
-                    quest.copy(completed = true)
-                }
-                else{
-                    quest
-                }
-            }
-        }
+
+        questDao.completeQuest(id)
     }
 }

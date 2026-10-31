@@ -1,3 +1,4 @@
+
 [versions]
 agp = "9.4.1"
 coreKtx = "1.19.1"
@@ -11,6 +12,7 @@ composeBom = "2026.02.01"
 navigationCompose = "2.10.2"
 hilt = "2.60.1"
 ksp = "2.3.6"
+room = "2.8.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -31,6 +33,10 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

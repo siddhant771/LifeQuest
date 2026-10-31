@@ -1,5 +1,7 @@
 package com.siddhant.lifequest.domain.model
 
+import androidx.room.Entity
+
 
 // day2
 enum class Difficulty(val multiplier:Int){
