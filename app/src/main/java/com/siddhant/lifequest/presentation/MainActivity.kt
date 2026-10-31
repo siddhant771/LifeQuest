@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -131,111 +131,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
  * Shared state is owned here so that quests and XP remain
  * consistent while navigating between screens.
  */
-@Composable
-fun LifeQuestNavigation() {
-    val navController = rememberNavController()
 
-    var quests by rememberSaveable {
-        mutableStateOf(
-            listOf(
-                Quest(1, "Study Kotlin", 50, Difficulty.EASY),
-                Quest(2, "Solve DSA Problems", 50, Difficulty.MEDIUM),
-                Quest(3, "Workout", 30, Difficulty.HARD)
-            )
-        )
-    }
-
-    var completedIds by rememberSaveable {
-        mutableStateOf(listOf<Int>())
-    }
-
-    var selectedFilter by rememberSaveable {
-        mutableStateOf(QuestFilter.ALL)
-    }
-
-
-    val state = completedIds.fold(QuestState(quests)) { current, id ->
-        when (val result = completeQuest(current, id)) {
-            is QuestResult.Success -> result.state
-            QuestResult.AlreadyCompleted -> current
-            QuestResult.NotFound -> current
-        }
-    }
-
-    fun completeQuestById(id: Int) {
-        if (quests.any { it.id == id } && id !in completedIds) {
-            completedIds = completedIds + id
-        }
-    }
-
-    fun createQuest(title: String, xp: Int, difficulty: Difficulty) {
-        val nextId = (quests.maxOfOrNull { it.id } ?: 0) + 1
-
-        quests = quests + Quest(
-            id = nextId,
-            title = title,
-            xp = xp,
-            difficulty = difficulty
-        )
-    }
-
-    NavHost(
-        navController = navController,
-        startDestination = LifeQuestRoutes.DASHBOARD
-    ) {
-        composable(LifeQuestRoutes.DASHBOARD) {
-
-            DashboardScreen(
-                state = state,
-                selectedFilter = selectedFilter,
-                onFilterChange = { selectedFilter = it },
-                onCreateQuest = ::createQuest,
-                onQuestClick = { questId ->
-                    navController.navigate(
-                        LifeQuestRoutes.detail(questId)
-                    )
-                },
-                onProfileClick = {
-                    navController.navigate(LifeQuestRoutes.PROFILE)
-                },
-                onCompleteQuest = ::completeQuestById
-            )
-
-        }
-
-        composable(
-            route = LifeQuestRoutes.DETAIL,
-            arguments = listOf(
-                navArgument("questId") {
-                    type = NavType.IntType
-                }
-            )
-        ) { backStackEntry ->
-            val questId = backStackEntry.arguments?.getInt("questId")
-            val quest = state.quests.find { it.id == questId }
-
-            if (quest != null) {
-                QuestDetailScreen(
-                    quest = quest,
-                    onBack = { navController.popBackStack() },
-                    onComplete = { completeQuestById(quest.id) }
-                )
-            } else {
-                MissingQuestScreen(
-                    onBack = { navController.popBackStack() }
-                )
-            }
-        }
-
-        composable(LifeQuestRoutes.PROFILE) {
-            ProfileScreen(
-                state = state,
-                completedCount = completedIds.size,
-                onBack = { navController.popBackStack() }
-            )
-        }
-    }
-}
 
 
 @Composable
@@ -262,12 +158,14 @@ fun DashboardScreen(
         modifier = Modifier.fillMaxSize(),
         color = backgroundColor
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
-                .padding(16.dp)
+                .safeDrawingPadding(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item{
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -284,105 +182,106 @@ fun DashboardScreen(
                     Text("Profile")
                 }
             }
+                }
 
-            Spacer(Modifier.height(16.dp))
+            item {
 
-            XPWidget(
-                totalXP = state.totalXP,
-                level = state.level
-            )
+                XPWidget(
+                    totalXP = state.totalXP,
+                    level = state.level
+                )
+            }
 
-            Spacer(Modifier.height(16.dp))
+            item {
 
-            CreateQuestForm(
-                onCreateQuest = onCreateQuest
-            )
+                CreateQuestForm(
+                    onCreateQuest = onCreateQuest
+                )
+            }
 
-            Spacer(Modifier.height(20.dp))
+           item {
 
-            Text(
-                text = "Today's Quests",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
+               Text(
+                   text = "Today's Quests",
+                   color = Color.White,
+                   fontSize = 22.sp,
+                   fontWeight = FontWeight.Bold
+               )
+           }
 
-            Spacer(Modifier.height(12.dp))
+            item {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                QuestFilter.entries.forEach { filter ->
-                    FilterChip(
-                        selected = selectedFilter == filter,
-                        onClick = {
-                            onFilterChange(filter)
-                        },
-                        label = {
-                            Text(
-                                filter.name
-                                    .lowercase()
-                                    .replaceFirstChar {
-                                        it.uppercase()
-                                    }
-                            )
-                        }
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    QuestFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = selectedFilter == filter,
+                            onClick = {
+                                onFilterChange(filter)
+                            },
+                            label = {
+                                Text(
+                                    filter.name
+                                        .lowercase()
+                                        .replaceFirstChar {
+                                            it.uppercase()
+                                        }
+                                )
+                            }
+                        )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+
 
             if (filteredQuests.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = when (selectedFilter) {
-                            QuestFilter.ALL -> "No quests yet. Create one!"
-                            QuestFilter.ACTIVE -> "No active quests."
-                            QuestFilter.COMPLETED -> "No completed quests yet."
-                        },
-                        color = Color.LightGray,
-                        textAlign = TextAlign.Center
-                    )
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = when (selectedFilter) {
+                                QuestFilter.ALL -> "No quests yet. Create one!"
+                                QuestFilter.ACTIVE -> "No active quests."
+                                QuestFilter.COMPLETED -> "No completed quests yet."
+                            },
+                            color = Color.LightGray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = filteredQuests,
-                        key = { quest -> quest.id }
-                    ) { quest ->
-                        Column {
-                            QuestCard(
-                                quest = quest,
-                                onComplete = {
-                                    onCompleteQuest(quest.id)
-                                }
-                            )
-
-                            TextButton(
-                                onClick = {
-                                    onQuestClick(quest.id)
-                                }
-                            ) {
-                                Text("View Quest Details →")
+                items(
+                    items = filteredQuests,
+                    key = { quest -> quest.id }
+                ) { quest ->
+                    Column {
+                        QuestCard(
+                            quest = quest,
+                            onComplete = {
+                                onCompleteQuest(quest.id)
                             }
+                        )
+
+                        TextButton(
+                            onClick = {
+                                onQuestClick(quest.id)
+                            }
+                        ) {
+                            Text("View Quest Details →")
                         }
                     }
                 }
             }
-        }
-    }
+       }
+   }
 }
-
 
 @Composable
 fun QuestDetailScreen(
@@ -798,49 +697,91 @@ fun QuestCard(
         }
     }
 }
-@Composable
-fun AsyncQuestSection(
-    viewModel: QuestViewModel
-){
-    val quests by viewModel.quests.collectAsStateWithLifecycle()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(viewModel) {
-        viewModel.loadQuests()
-    }
-    when{
-        uiState.isLoading -> {
-            CircularProgressIndicator()
-        }
-        uiState.errorMessage != null -> {
-            Column{
-                Text(uiState.errorMessage!!)
-                Button(onClick = {
-                    viewModel.loadQuests()
-                }) {
-                    Text("Retry")
-                }
-            }
-        }
-        else -> {
-            LazyColumn{
-                items(
-                    items =  quests,
-                    key = {
-                        quest -> quest.id
-                    }
-                ){
-                    quest -> Text(quest.title)
-                }
-            }
-        }
-    }
-}
-@Composable
-@Preview(showSystemUi=true)
-fun AsyncQuestDemoScreen(){
-    val questViewModel: QuestViewModel = viewModel()
-    AsyncQuestSection(
-        viewModel=questViewModel
-    )
-}
 
+
+@Composable
+fun LifeQuestNavigation() {
+
+    val navController = rememberNavController()
+
+    val viewModel: QuestViewModel = hiltViewModel()
+
+    val quests by viewModel.quests.collectAsStateWithLifecycle()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    var selectedFilter by rememberSaveable {
+        mutableStateOf(QuestFilter.ALL)
+    }
+
+    val totalXP = quests
+        .filter { it.completed }
+        .sumOf { it.xp * it.difficulty.multiplier }
+
+    val state = QuestState(
+        quests = quests,
+        totalXP = totalXP
+    )
+
+    NavHost(
+        navController = navController,
+        startDestination = LifeQuestRoutes.DASHBOARD
+    ) {
+
+        composable(LifeQuestRoutes.DASHBOARD) {
+
+            DashboardScreen(
+                state = state,
+                selectedFilter = selectedFilter,
+                onFilterChange = { selectedFilter = it },
+                onCreateQuest = viewModel::addQuest,
+                onQuestClick = { questId ->
+                    navController.navigate(
+                        LifeQuestRoutes.detail(questId)
+                    )
+                },
+                onProfileClick = {
+                    navController.navigate(LifeQuestRoutes.PROFILE)
+                },
+                onCompleteQuest = viewModel::completeQuest
+            )
+        }
+
+        composable(
+            route = LifeQuestRoutes.DETAIL,
+            arguments = listOf(
+                navArgument("questId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+
+            val questId = backStackEntry.arguments?.getInt("questId")
+
+            val quest = state.quests.find { it.id == questId }
+
+            if (quest != null) {
+                QuestDetailScreen(
+                    quest = quest,
+                    onBack = { navController.popBackStack() },
+                    onComplete = {
+                        viewModel.completeQuest(quest.id)
+                    }
+                )
+            } else {
+                MissingQuestScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
+        composable(LifeQuestRoutes.PROFILE) {
+
+            ProfileScreen(
+                state = state,
+                completedCount = quests.count { it.completed },
+                onBack = { navController.popBackStack() }
+            )
+        }
+    }
+}

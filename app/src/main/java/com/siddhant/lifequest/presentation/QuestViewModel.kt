@@ -3,9 +3,11 @@ package com.siddhant.lifequest.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.siddhant.lifequest.domain.model.Difficulty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import com.siddhant.lifequest.domain.model.Quest
+import com.siddhant.lifequest.domain.usecase.AddQuestUseCase
 import com.siddhant.lifequest.domain.usecase.CompletedQuestUseCase
 import com.siddhant.lifequest.domain.usecase.GetQuestsUseCase
 import kotlinx.coroutines.CancellationException
@@ -18,12 +20,14 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class QuestViewModel @Inject constructor(
     private val getQuests: GetQuestsUseCase,
+    private val addQuestUseCase: AddQuestUseCase,
     private val completeQuestUseCase: CompletedQuestUseCase
 ) : ViewModel() {
 
     // Holds the latest quest list
     private val _quests = MutableStateFlow<List<Quest>>(emptyList())
     val quests = _quests.asStateFlow()
+
 
     // Holds loading and error information
     private val _uiState = MutableStateFlow(QuestUiState())
@@ -61,6 +65,29 @@ class QuestViewModel @Inject constructor(
 
                 _uiState.value = QuestUiState(
                     errorMessage = "Unable to load quests. Please try again."
+                )
+            }
+        }
+    }
+    fun addQuest(title: String, xp: Int, difficulty: Difficulty) {
+        viewModelScope.launch {
+            try {
+                val nextId = (_quests.value.maxOfOrNull { it.id } ?: 0) + 1
+
+                val quest = Quest(
+                    id = nextId,
+                    title = title,
+                    xp = xp,
+                    difficulty = difficulty
+                )
+
+                addQuestUseCase(quest)
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = QuestUiState(
+                    errorMessage = "Unable to create quest. Please try again."
                 )
             }
         }
