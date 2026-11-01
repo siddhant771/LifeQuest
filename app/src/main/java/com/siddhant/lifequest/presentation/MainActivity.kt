@@ -705,13 +705,18 @@ fun LifeQuestNavigation() {
     val navController = rememberNavController()
 
     val viewModel: QuestViewModel = hiltViewModel()
+    val savedFilter by viewModel.selectedFilter
+        .collectAsStateWithLifecycle()
 
     val quests by viewModel.quests.collectAsStateWithLifecycle()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var selectedFilter by rememberSaveable {
-        mutableStateOf(QuestFilter.ALL)
+
+    val selectedFilter = remember(savedFilter) {
+        runCatching {
+            QuestFilter.valueOf(savedFilter)
+        }.getOrDefault(QuestFilter.ALL)
     }
 
     val totalXP = quests
@@ -733,7 +738,9 @@ fun LifeQuestNavigation() {
             DashboardScreen(
                 state = state,
                 selectedFilter = selectedFilter,
-                onFilterChange = { selectedFilter = it },
+                onFilterChange = { filter ->
+                    viewModel.updateSelectedFilter(filter.name)
+                },
                 onCreateQuest = viewModel::addQuest,
                 onQuestClick = { questId ->
                     navController.navigate(

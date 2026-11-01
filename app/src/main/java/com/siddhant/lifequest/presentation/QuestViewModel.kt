@@ -3,6 +3,7 @@ package com.siddhant.lifequest.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.siddhant.lifequest.data.preferences.UserPreferences
 import com.siddhant.lifequest.domain.model.Difficulty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -21,12 +22,16 @@ import kotlinx.coroutines.launch
 class QuestViewModel @Inject constructor(
     private val getQuests: GetQuestsUseCase,
     private val addQuestUseCase: AddQuestUseCase,
-    private val completeQuestUseCase: CompletedQuestUseCase
+    private val completeQuestUseCase: CompletedQuestUseCase,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     // Holds the latest quest list
     private val _quests = MutableStateFlow<List<Quest>>(emptyList())
     val quests = _quests.asStateFlow()
+    private val _selectedFilter = MutableStateFlow("ALL")
+
+    val selectedFilter = _selectedFilter.asStateFlow()
 
 
     // Holds loading and error information
@@ -37,6 +42,7 @@ class QuestViewModel @Inject constructor(
 
     init {
         loadQuests()
+        observeSelectedFilter()
     }
 
     // Loads quests from Room through the repository and use case
@@ -67,6 +73,18 @@ class QuestViewModel @Inject constructor(
                     errorMessage = "Unable to load quests. Please try again."
                 )
             }
+        }
+    }
+    fun observeSelectedFilter() {
+        viewModelScope.launch {
+            userPreferences.selectedFilter.collect { filter ->
+                _selectedFilter.value = filter
+            }
+        }
+    }
+    fun updateSelectedFilter(filter: String) {
+        viewModelScope.launch {
+            userPreferences.saveSelectedFilter(filter)
         }
     }
     fun addQuest(title: String, xp: Int, difficulty: Difficulty) {
