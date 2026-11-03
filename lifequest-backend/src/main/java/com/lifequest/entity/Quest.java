@@ -10,13 +10,21 @@ public class Quest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(nullable = false)
     private Integer xp;
 
+    @Column(nullable = false, length = 20)
     private String difficulty;
 
+    @Column(nullable = false)
     private boolean completed = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     public Quest() {
     }
@@ -41,6 +49,10 @@ public class Quest {
         return completed;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }
@@ -55,5 +67,9 @@ public class Quest {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }
