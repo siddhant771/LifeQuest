@@ -23,7 +23,9 @@ jobs:
         run: |
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | head -n 1)"
           yes | "$SDKMANAGER" --licenses
-          "$SDKMANAGER" --channel=3 "platform-tools" "platforms;android-37"
+          "$SDKMANAGER" "platform-tools" "platforms;android-36"
+      - name: Use available CI SDK for source compilation
+        run: sed -i 's/release(37)/release(36)/; s/targetSdk = 37/targetSdk = 36/' app/build.gradle.kts
       - uses: gradle/actions/setup-gradle@v4
       - name: Run Android unit tests and assemble debug APK
         run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug
