@@ -6,8 +6,10 @@ interface LifeQuestApi{
  @GET("api/leaderboard/weekly") suspend fun getWeeklyLeaderboard():List<LeaderboardEntry>
  @GET("api/achievements") suspend fun getAchievements():List<AchievementResponse>
  @POST("api/challenges/friends") suspend fun inviteFriend(@Body request:FriendChallengeRequest):ChallengeCreatedResponse
+ @GET("api/challenges/friends/invitations") suspend fun invitations():List<FriendInvitation>
  @POST("api/challenges/friends/{id}/accept") suspend fun acceptFriendInvite(@Path("id") id:Long):Map<String,Any>
  @POST("api/challenges/teams") suspend fun createTeam(@Body request:TeamChallengeRequest):TeamChallengeResponse
  @POST("api/challenges/teams/{id}/join") suspend fun joinTeam(@Path("id") id:Long):Map<String,Any>
  @GET("api/challenges/teams") suspend fun getTeams():List<TeamSummary>
+ @GET("api/challenges/teams/{id}/leaderboard") suspend fun getTeamLeaderboard(@Path("id") id:Long):List<TeamLeaderboardEntry>
 }
