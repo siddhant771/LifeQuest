@@ -1,46 +1,36 @@
-name: LifeQuest CI
+name: LifeQuest Android CI
 on:
   push:
-    branches: [master, backend]
+    branches: [master]
   pull_request:
-    branches: [master, backend]
+    branches: [master]
 permissions:
   contents: read
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   android:
-    if: github.ref_name == 'master' || (github.event_name == 'pull_request' && github.base_ref == 'master')
     runs-on: ubuntu-latest
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-      - name: Install Android SDK platform
-        run: |
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | head -n 1)"
-          yes | "$SDKMANAGER" --licenses
-          "$SDKMANAGER" "platform-tools" "platforms;android-36"
-      - name: Use available CI SDK for source compilation
-        run: sed -i 's/release(37)/release(36)/; s/targetSdk = 37/targetSdk = 36/' app/build.gradle.kts
+      - uses: android-actions/setup-android@v3
+      - name: Install Android API 37
+        run: sdkmanager "platform-tools" "platforms;android-37"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Run Android unit tests and assemble debug APK
-        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug
-  backend:
-    if: github.ref_name == 'backend' || (github.event_name == 'pull_request' && github.base_ref == 'backend')
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lifequest-backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - name: Run staging unit tests
+        run: ./gradlew --no-daemon :app:testStagingDebugUnitTest
+      - name: Assemble staging debug APK
+        run: ./gradlew --no-daemon :app:assembleStagingDebug
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      - name: Run Spring Boot tests
-        run: bash ./mvnw -B test
+          name: lifequest-staging-debug
+          path: app/build/outputs/apk/staging/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
