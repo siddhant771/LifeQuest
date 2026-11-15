@@ -6,7 +6,7 @@ public class User {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Column(nullable=false,length=100) private String name;
  @Column(nullable=false,unique=true,length=150) private String email;
- @Column(name="password_hash",nullable=false) private String passwordHash;
+ @Column(name="password_hash",nullable=false,length=100) private String passwordHash;
  @Column(name="total_xp",nullable=false) private long totalXp=0;
  @Column(name="current_streak",nullable=false) private int currentStreak=0;
  @Column(name="longest_streak",nullable=false) private int longestStreak=0;
