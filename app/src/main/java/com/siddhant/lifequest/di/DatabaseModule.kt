@@ -1,39 +1,22 @@
 package com.siddhant.lifequest.di
-
-
 import android.content.Context
 import androidx.room.Room
-import com.siddhant.lifequest.data.local.QuestDao
-import com.siddhant.lifequest.data.local.QuestDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.siddhant.lifequest.data.local.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-
-@Module
-@InstallIn(SingletonComponent::class)
-object DatabaseModule {
-
-    @Provides
-    @Singleton
-    fun provideQuestDatabase(
-        @ApplicationContext context: Context
-    ): QuestDatabase {
-
-        return Room.databaseBuilder(
-            context,
-            QuestDatabase::class.java,
-            "lifequest_database"
-        ).build()
-    }
-
-    @Provides
-    fun provideQuestDao(
-        database: QuestDatabase
-    ): QuestDao {
-
-        return database.questDao()
-    }
+@Module @InstallIn(SingletonComponent::class) object DatabaseModule {
+ private val MIGRATION_1_2=object:Migration(1,2){override fun migrate(db:SupportSQLiteDatabase){
+  db.execSQL("ALTER TABLE quests ADD COLUMN remoteId INTEGER")
+  db.execSQL("ALTER TABLE quests ADD COLUMN pendingCreate INTEGER NOT NULL DEFAULT 1")
+  db.execSQL("ALTER TABLE quests ADD COLUMN pendingCompletion INTEGER NOT NULL DEFAULT 0")
+ }}
+ @Provides @Singleton fun provideQuestDatabase(@ApplicationContext context:Context):QuestDatabase=
+  Room.databaseBuilder(context,QuestDatabase::class.java,"lifequest_database").addMigrations(MIGRATION_1_2).build()
+ @Provides fun provideQuestDao(database:QuestDatabase):QuestDao=database.questDao()
 }
