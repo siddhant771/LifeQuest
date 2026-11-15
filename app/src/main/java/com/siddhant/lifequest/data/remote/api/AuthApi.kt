@@ -1,0 +1,17 @@
+package com.siddhant.lifequest.data.remote.api
+
+import com.siddhant.lifequest.data.remote.dto.AuthResponse
+import com.siddhant.lifequest.data.remote.dto.LoginRequest
+import com.siddhant.lifequest.data.remote.dto.RegisterRequest
+import okhttp3.ResponseBody
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.POST
+
+interface AuthApi {
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<ResponseBody>
+
+    @POST("api/auth/login")
+    suspend fun login(@Body request: LoginRequest): AuthResponse
+}
