@@ -5,7 +5,9 @@ import com.lifequest.dto.CreateQuestRequest;import com.lifequest.entity.*;import
  public QuestService(QuestRepository q,UserRepository u,QuestCompletionEventRepository e,AchievementService a,StreakService s){quests=q;users=u;events=e;achievements=a;streaks=s;}
  @Transactional public Quest createQuest(Long uid,CreateQuestRequest r){
   if(r.clientRequestId()!=null&&!r.clientRequestId().isBlank()){var old=quests.findByUser_IdAndClientRequestId(uid,r.clientRequestId());if(old.isPresent())return old.get();}
-  User u=users.findById(uid).orElseThrow(()->new IllegalArgumentException("User not found"));String d=r.difficulty().trim().toUpperCase(Locale.ROOT);if(!Set.of("EASY","MEDIUM","HARD").contains(d))throw new IllegalArgumentException("Invalid difficulty");
+  User u=users.findById(uid).orElseThrow(()->new IllegalArgumentException("User not found"));String d=r.difficulty().trim().toUpperCase(Locale.ROOT);
+  int multiplier=switch(d){case "EASY"->1;case "MEDIUM"->2;case "HARD"->3;default->throw new IllegalArgumentException("Invalid difficulty");};
+  if(r.xp()*multiplier>1000)throw new IllegalArgumentException("Maximum XP for "+d+" quests is "+(1000/multiplier));
   Quest q=new Quest();q.setTitle(r.title().trim());q.setXp(r.xp());q.setDifficulty(d);q.setCompleted(false);q.setUser(u);q.setClientRequestId(r.clientRequestId());return quests.save(q);
  }
  @Transactional(readOnly=true) public List<Quest> getUserQuests(Long uid){return quests.findByUser_IdOrderByIdDesc(uid);}
