@@ -6,11 +6,11 @@ plugins {
 }
 android {
     namespace = "com.siddhant.lifequest"
-    compileSdk { version = release(37) }
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.siddhant.lifequest"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 2
         versionName = "1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -24,7 +24,7 @@ android {
         create("production") {
             dimension = "environment"
             buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
-    }
+        }
     }
     buildTypes {
         debug {
@@ -32,7 +32,10 @@ android {
         }
         release { }
     }
-    buildFeatures { compose = true; buildConfig = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
