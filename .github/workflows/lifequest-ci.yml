@@ -23,8 +23,8 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Run tests
-        run: ./mvnw -B test
+        run: bash ./mvnw -B test
       - name: Package executable JAR
-        run: ./mvnw -B -DskipTests package
+        run: bash ./mvnw -B -DskipTests package
       - name: Build Docker image
         run: docker build -t lifequest-api:ci .
