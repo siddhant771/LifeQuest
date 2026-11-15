@@ -1,47 +1,9 @@
 package com.lifequest.service;
-
-import com.lifequest.dto.CreateQuestRequest;
-import com.lifequest.entity.Quest;
-import com.lifequest.entity.User;
-import com.lifequest.repository.QuestRepository;
-import com.lifequest.repository.UserRepository;
-
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class QuestService {
-
-    private final QuestRepository questRepository;
-    private final UserRepository userRepository;
-
-    public QuestService(
-            QuestRepository questRepository,
-            UserRepository userRepository
-    ) {
-        this.questRepository = questRepository;
-        this.userRepository = userRepository;
-    }
-
-    public Quest createQuest(Long userId, CreateQuestRequest request) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-
-        Quest quest = new Quest();
-
-        quest.setTitle(request.getTitle());
-        quest.setXp(request.getXp());
-        quest.setDifficulty(request.getDifficulty().toUpperCase());
-        quest.setCompleted(false);
-        quest.setUser(user);
-
-        return questRepository.save(quest);
-    }
-
-    public List<Quest> getUserQuests(Long userId) {
-        return questRepository.findByUser_Id(userId);
-    }
+import com.lifequest.dto.CreateQuestRequest;import com.lifequest.entity.*;import com.lifequest.repository.*;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.time.*;import java.util.*;
+@Service public class QuestService {
+ private final QuestRepository quests;private final UserRepository users;private final QuestCompletionEventRepository events;private final AchievementService achievements;private final StreakService streaks;
+ public QuestService(QuestRepository q,UserRepository u,QuestCompletionEventRepository e,AchievementService a,StreakService s){quests=q;users=u;events=e;achievements=a;streaks=s;}
+ @Transactional public Quest createQuest(Long uid,CreateQuestRequest r){User u=users.findById(uid).orElseThrow(()->new IllegalArgumentException("User not found"));String d=r.difficulty().trim().toUpperCase(Locale.ROOT);if(!Set.of("EASY","MEDIUM","HARD").contains(d))throw new IllegalArgumentException("Invalid difficulty");Quest q=new Quest();q.setTitle(r.title().trim());q.setXp(r.xp());q.setDifficulty(d);q.setCompleted(false);q.setUser(u);return quests.save(q);}
+ @Transactional(readOnly=true) public List<Quest> getUserQuests(Long uid){return quests.findByUser_IdOrderByIdDesc(uid);}
+ @Transactional public QuestCompletionEvent completeQuest(Long uid,Long qid){User u=users.findById(uid).orElseThrow(()->new IllegalArgumentException("User not found"));Quest q=quests.findOwnedForUpdate(qid,uid).orElseThrow(()->new IllegalArgumentException("Quest not found"));if(q.isCompleted()||events.existsByQuest_Id(qid))throw new IllegalStateException("Quest already completed");int xp=q.getXp();if(xp<1||xp>1000)throw new IllegalArgumentException("XP reward outside allowed range");q.setCompleted(true);u.addXp(xp);streaks.onValidatedQuestCompletion(u,LocalDate.now(ZoneOffset.UTC));QuestCompletionEvent event=events.save(new QuestCompletionEvent(u,q,xp,OffsetDateTime.now(ZoneOffset.UTC)));achievements.evaluate(u);return event;}
 }

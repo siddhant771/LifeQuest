@@ -1,78 +1,9 @@
 package com.lifequest.controller;
-
-import com.lifequest.dto.CreateQuestRequest;
-import com.lifequest.dto.QuestResponse;
-import com.lifequest.dto.QuestCompletionResponse;
-
-import com.lifequest.entity.Quest;
-import com.lifequest.entity.QuestCompletionEvent;
-
-import com.lifequest.service.QuestService;
-import com.lifequest.service.QuestCompletionService;
-
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/api")
-public class QuestController {
-
-    private final QuestService questService;
-    private final QuestCompletionService completionService;
-
-    public QuestController(
-            QuestService questService,
-            QuestCompletionService completionService
-    ) {
-        this.questService = questService;
-        this.completionService = completionService;
-    }
-
-    @PostMapping("/users/{userId}/quests")
-    public QuestResponse createQuest(
-            @PathVariable Long userId,
-            @RequestBody CreateQuestRequest request
-    ) {
-        Quest quest = questService.createQuest(userId, request);
-        return toResponse(quest);
-    }
-
-    @GetMapping("/users/{userId}/quests")
-    public List<QuestResponse> getUserQuests(
-            @PathVariable Long userId
-    ) {
-        return questService.getUserQuests(userId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @PostMapping("/users/{userId}/quests/{questId}/complete")
-    public QuestCompletionResponse completeQuest(
-            @PathVariable Long userId,
-            @PathVariable Long questId
-    ) {
-        QuestCompletionEvent event =
-                completionService.completeQuest(userId, questId);
-
-        return new QuestCompletionResponse(
-                event.getId(),
-                event.getUser().getId(),
-                event.getQuest().getId(),
-                event.getXpAwarded(),
-                event.getCompletedAt()
-        );
-    }
-
-    private QuestResponse toResponse(Quest quest) {
-        return new QuestResponse(
-                quest.getId(),
-                quest.getUser().getId(),
-                quest.getTitle(),
-                quest.getXp(),
-                quest.getDifficulty(),
-                quest.isCompleted()
-        );
-    }
+import com.lifequest.dto.*;import com.lifequest.entity.*;import com.lifequest.service.QuestService;import jakarta.validation.Valid;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.util.*;
+@RestController @RequestMapping("/api/quests") public class QuestController {
+ private final QuestService service;public QuestController(QuestService s){service=s;}private Long uid(Authentication a){return Long.valueOf(a.getName());}
+ @PostMapping public QuestResponse create(@Valid @RequestBody CreateQuestRequest r,Authentication a){return response(service.createQuest(uid(a),r));}
+ @GetMapping public List<QuestResponse> list(Authentication a){return service.getUserQuests(uid(a)).stream().map(this::response).toList();}
+ @PostMapping("/{questId}/complete") public QuestCompletionResponse complete(@PathVariable Long questId,Authentication a){QuestCompletionEvent e=service.completeQuest(uid(a),questId);return new QuestCompletionResponse(e.getId(),e.getUser().getId(),e.getQuest().getId(),e.getXpAwarded(),e.getCompletedAt());}
+ private QuestResponse response(Quest q){return new QuestResponse(q.getId(),q.getUser().getId(),q.getTitle(),q.getXp(),q.getDifficulty(),q.isCompleted());}
 }
