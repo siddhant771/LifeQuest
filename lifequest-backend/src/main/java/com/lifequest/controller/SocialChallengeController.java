@@ -19,12 +19,23 @@ public class SocialChallengeController{
   Long id=jdbc.queryForObject("INSERT INTO friend_challenges(creator_id,invitee_id,title,target_xp,starts_at,ends_at,status) VALUES(?,?,?,?,?,?,'PENDING') RETURNING id",Long.class,from,to,title,target,start,end);
   return Map.of("challengeId",id,"status","PENDING");
  }
- @GetMapping("/friends/invitations") public List<Map<String,Object>> invitations(Authentication a){
-  return jdbc.queryForList("SELECT id,creator_id,title,target_xp,starts_at,ends_at,status FROM friend_challenges WHERE invitee_id=? AND status='PENDING' AND ends_at>now() ORDER BY created_at DESC",uid(a));
- }
+ @GetMapping("/friends/invitations") public List<Map<String,Object>> invitations(Authentication a){return jdbc.queryForList("SELECT id,creator_id,title,target_xp,starts_at,ends_at,status FROM friend_challenges WHERE invitee_id=? AND status='PENDING' AND ends_at>now() ORDER BY created_at DESC",uid(a));}
  @PostMapping("/friends/{id}/accept") public Map<String,Object> accept(@PathVariable long id,Authentication a){
   int n=jdbc.update("UPDATE friend_challenges SET status='ACCEPTED' WHERE id=? AND invitee_id=? AND status='PENDING' AND ends_at>now()",id,uid(a));
   if(n==0)throw new IllegalArgumentException("Invitation not found, expired or already handled");return Map.of("challengeId",id,"status","ACCEPTED");
+ }
+ @GetMapping("/friends/active") public List<Map<String,Object>> activeFriends(Authentication a){
+  long user=uid(a);return jdbc.queryForList("""
+   SELECT c.id,c.title,c.target_xp,c.starts_at,c.ends_at,c.status,
+    c.creator_id,c.invitee_id,
+    COALESCE(SUM(CASE WHEN e.user_id=c.creator_id THEN e.xp_awarded ELSE 0 END),0) AS creator_xp,
+    COALESCE(SUM(CASE WHEN e.user_id=c.invitee_id THEN e.xp_awarded ELSE 0 END),0) AS invitee_xp
+   FROM friend_challenges c
+   LEFT JOIN quest_completion_events e ON e.user_id IN (c.creator_id,c.invitee_id)
+      AND e.completed_at>=c.starts_at AND e.completed_at<c.ends_at
+   WHERE (c.creator_id=? OR c.invitee_id=?) AND c.status='ACCEPTED' AND c.ends_at>now()
+   GROUP BY c.id ORDER BY c.ends_at
+   """,user,user);
  }
  @PostMapping("/teams") public Map<String,Object> createTeam(@RequestBody Map<String,Object> body,Authentication a){
   long user=uid(a);String title=String.valueOf(body.getOrDefault("title","Weekly league")).trim();int target=Integer.parseInt(String.valueOf(body.getOrDefault("targetXp","500")));
@@ -38,7 +49,7 @@ public class SocialChallengeController{
   if(n==0)throw new IllegalArgumentException("Team challenge not found or already joined");return Map.of("teamChallengeId",id,"joined",true);
  }
  @GetMapping("/teams") public List<Map<String,Object>> teams(Authentication a){
-  return jdbc.queryForList("SELECT t.id,t.title,t.target_xp,t.week_start,COUNT(m.user_id) AS member_count FROM team_challenges t JOIN team_challenge_members m ON m.team_challenge_id=t.id WHERE m.user_id=? GROUP BY t.id ORDER BY t.week_start DESC",uid(a));
+  return jdbc.queryForList("SELECT t.id,t.title,t.target_xp,t.week_start,COUNT(m.user_id) AS member_count,COALESCE(BOOL_OR(m.user_id=?),false) AS is_member FROM team_challenges t LEFT JOIN team_challenge_members m ON m.team_challenge_id=t.id GROUP BY t.id ORDER BY t.week_start DESC,t.id DESC",uid(a));
  }
  @GetMapping("/teams/{id}/leaderboard") public List<Map<String,Object>> teamLeaderboard(@PathVariable long id,Authentication a){
   long user=uid(a);Integer member=jdbc.queryForObject("SELECT COUNT(*) FROM team_challenge_members WHERE team_challenge_id=? AND user_id=?",Integer.class,id,user);
