@@ -24,14 +24,13 @@ android {
         create("production") {
             dimension = "environment"
             buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
-        }
+    }
     }
     buildTypes {
-        debug { }
-        release {
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        debug {
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
+        release { }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
