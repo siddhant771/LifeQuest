@@ -21,16 +21,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Install Android API 37
+      - name: Install Android API 37 preview platform
         run: |
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | head -n 1)"
           yes | "$SDKMANAGER" --licenses || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-37"
+          "$SDKMANAGER" --channel=3 --install "platform-tools" "platforms;android-37"
       - uses: gradle/actions/setup-gradle@v4
       - name: Run staging unit tests
-        run: ./gradlew --no-daemon :app:testStagingDebugUnitTest
+        run: bash ./gradlew --no-daemon :app:testStagingDebugUnitTest
       - name: Assemble staging debug APK
-        run: ./gradlew --no-daemon :app:assembleStagingDebug
+        run: bash ./gradlew --no-daemon :app:assembleStagingDebug
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
