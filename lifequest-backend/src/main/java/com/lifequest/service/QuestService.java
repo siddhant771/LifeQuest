@@ -6,11 +6,13 @@ import com.lifequest.dto.CreateQuestRequest;import com.lifequest.entity.*;import
  @Transactional public Quest createQuest(Long uid,CreateQuestRequest r){
   String requestId = r.clientRequestId() == null || r.clientRequestId().isBlank()
    ? null : r.clientRequestId().trim();
+  // Serialize creates per account so concurrent retries with the same key
+  // cannot race between the idempotency lookup and insert.
+  User u=users.findByIdForUpdate(uid).orElseThrow(()->new IllegalArgumentException("User not found"));
   if(requestId != null){
    var old=quests.findByUser_IdAndClientRequestId(uid,requestId);
    if(old.isPresent())return old.get();
-  }
-  User u=users.findById(uid).orElseThrow(()->new IllegalArgumentException("User not found"));String d=r.difficulty().trim().toUpperCase(Locale.ROOT);
+  }String d=r.difficulty().trim().toUpperCase(Locale.ROOT);
   int multiplier=switch(d){case "EASY"->1;case "MEDIUM"->2;case "HARD"->3;default->throw new IllegalArgumentException("Invalid difficulty");};
   if((long)r.xp()*multiplier>1000L)throw new IllegalArgumentException("Maximum XP for "+d+" quests is "+(1000/multiplier));
   Quest q=new Quest();q.setTitle(r.title().trim());q.setXp(r.xp());q.setDifficulty(d);q.setCompleted(false);q.setUser(u);q.setClientRequestId(requestId);return quests.save(q);
