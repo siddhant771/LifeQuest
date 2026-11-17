@@ -15,6 +15,7 @@ android {
         versionCode = 2
         versionName = "1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
     flavorDimensions += "environment"
     productFlavors {
@@ -29,6 +30,7 @@ android {
     }
     buildTypes {
         debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
         release { }
