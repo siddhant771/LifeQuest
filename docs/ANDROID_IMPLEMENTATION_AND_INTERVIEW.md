@@ -112,7 +112,7 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 )
 ~~~
 
-LifeQuest schedules the worker from LifeQuestApplication.onCreate. For prompt sync after a user action, enqueue unique one-time work. Return retry for transient errors; permanent validation failures should not retry forever. Idempotency keys protect against retries after a remote commit whose response was lost.
+LifeQuest schedules both unique periodic work and a network-constrained one-time sync from LifeQuestApplication.onCreate. The foreground ViewModel also attempts sync after local writes. Return retry for transient errors; permanent validation failures should not retry forever. Idempotency keys protect against retries after a remote commit whose response was lost.
 
 ## 5. Retrofit and OkHttp
 
@@ -130,9 +130,7 @@ interface QuestApi {
 }
 ~~~
 
-The auth interceptor adds Authorization: Bearer token to protected calls and excludes login/register. Redact Authorization from logs. Production logging must not print payloads containing personal data.
-
-Known improvement: the current interceptor performs a blocking DataStore read using runBlocking. A safer design maintains an in-memory token snapshot updated by login/logout, with durable storage as the source of truth. Avoid blocking an OkHttp thread on asynchronous storage.
+The auth interceptor adds Authorization: Bearer token to protected calls and excludes login/register. It reads an in-memory token snapshot populated by DataStore during session startup and updated by login/logout, avoiding a blocking DataStore read on OkHttp threads. Authorization is redacted from logs; production logging does not print request payloads.
 
 ## 6. Token lifecycle and security
 
@@ -143,7 +141,7 @@ Expected lifecycle:
 - Expired token -> handle 401 and require re-authentication.
 - Never print tokens, send them to analytics, or commit them to Git.
 
-Current TokenManager uses Preferences DataStore. DataStore is durable storage, not encryption. Before production, protect tokens using an Android Keystore-backed encryption strategy and test migration from the existing preference key. Do not claim plaintext DataStore is encrypted.
+TokenManager stores the access token encrypted with AES-GCM using an Android Keystore key; only ciphertext and the IV are stored in Preferences DataStore. The legacy plaintext preference key is migrated on session startup and before background sync. Verify migration and key-loss recovery on physical devices before release.
 
 ## 7. Unit and UI tests
 

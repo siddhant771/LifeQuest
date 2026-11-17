@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
@@ -14,6 +15,7 @@ android {
         versionCode = 2
         versionName = "1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
     flavorDimensions += "environment"
     productFlavors {
@@ -28,6 +30,7 @@ android {
     }
     buildTypes {
         debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
         release { }
@@ -39,6 +42,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
     }
 }
 dependencies {

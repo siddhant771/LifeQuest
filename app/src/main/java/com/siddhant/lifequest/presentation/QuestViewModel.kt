@@ -38,7 +38,15 @@ import java.util.UUID
  fun completeQuest(id:Int){viewModelScope.launch{try{val row=questDao.getAllOnce().firstOrNull{it.id==id}?:return@launch;if(row.completed||row.pendingCompletion)return@launch;questDao.queueCompletion(id);syncPending()}catch(e:CancellationException){throw e}catch(e:Exception){_uiState.value=QuestUiState(errorMessage="Completion queued. Sync when online.")}}}
  fun syncPending(){viewModelScope.launch{mutex.withLock{if(tokenManager.token.first().isNullOrBlank())return@withLock
   try{
-   questDao.getPendingCreates().forEach{local->val remote=remoteQuests.createQuest(local.clientRequestId ?: ("legacy-" + local.id),local.title,local.xp,local.difficulty);questDao.attachRemoteId(local.id,remote.id)}
+   questDao.getPendingCreates().forEach { local ->
+    // Persist the idempotency key before the network call so retries after process death
+    // cannot create a duplicate quest on the server.
+    val requestId = local.clientRequestId ?: UUID.randomUUID().toString().also {
+        questDao.setClientRequestId(local.id, it)
+    }
+    val remote = remoteQuests.createQuest(requestId, local.title, local.xp, local.difficulty)
+    questDao.attachRemoteId(local.id, remote.id)
+   }
    questDao.getPendingCompletions().forEach{local->val id=local.remoteId?:return@forEach
     try{remoteQuests.completeQuest(id);questDao.markCompleted(local.id)}
     catch(e:retrofit2.HttpException){if(e.code()==409&&remoteQuests.getQuests().any{it.id==id&&it.completed})questDao.markCompleted(local.id)else throw e}}
