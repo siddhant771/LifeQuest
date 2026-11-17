@@ -31,7 +31,7 @@ class AuthRepository @Inject constructor(
         val previousUserId = userPreferences.activeUserId.first()
         // Local quests are account-scoped. Never expose one account's cached data
         // to another account on a shared device.
-        if (previousUserId != null && previousUserId != result.userId) {
+        if (previousUserId != result.userId) {
             questDao.deleteAll()
         }
         tokenManager.saveToken(result.token)
