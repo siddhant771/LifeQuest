@@ -148,6 +148,7 @@ class QuestServiceTest {
     void createQuestReturnsExistingQuestForRepeatedClientRequestId() {
         User user = new User();
         Quest existing = quest(user, 25, "EASY", false);
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
         when(quests.findByUser_IdAndClientRequestId(7L, "same-request")).thenReturn(Optional.of(existing));
 
         Quest result = service.createQuest(
@@ -180,7 +181,7 @@ class QuestServiceTest {
 
     @Test
     void createQuestEnforcesDifficultyAdjustedXpLimit() {
-        when(users.findById(7L)).thenReturn(Optional.of(new User()));
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(new User()));
 
         assertThrows(IllegalArgumentException.class, () -> service.createQuest(
                 7L, new CreateQuestRequest("Read", 334, "HARD", null)));
