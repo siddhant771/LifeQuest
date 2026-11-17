@@ -39,6 +39,11 @@ class AuthRepository @Inject constructor(
         return result
     }
 
+    suspend fun clearExpiredSession() {
+        // Keep the local cache for the same account so it can sync after re-authentication.
+        tokenManager.clearToken()
+    }
+
     suspend fun logout() {
         tokenManager.clearToken()
         questDao.deleteAll()
