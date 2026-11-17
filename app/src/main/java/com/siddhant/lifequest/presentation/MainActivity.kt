@@ -33,7 +33,120 @@ private val Ink=Color(0xFF0B1020);private val Panel=Color(0xFF151F33);private va
 @Composable private fun CardBox(content:@Composable ColumnScope.()->Unit){Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(containerColor=Panel),content=content)}
 @Composable private fun Home(auth:AuthViewModel){val qvm:QuestViewModel=hiltViewModel();val svm:SocialViewModel=hiltViewModel();val quests by qvm.quests.collectAsStateWithLifecycle();val filter by qvm.selectedFilter.collectAsStateWithLifecycle();val ui by qvm.uiState.collectAsStateWithLifecycle();val social by svm.state.collectAsStateWithLifecycle();var tab by rememberSaveable{mutableIntStateOf(0)};var dialog by remember{mutableStateOf(false)};LaunchedEffect(Unit){svm.refresh()};LaunchedEffect(quests){svm.refresh()};Scaffold(containerColor=Ink,bottomBar={NavigationBar(containerColor=Panel){listOf("Quests","Community","Profile").forEachIndexed{i,label->NavigationBarItem(selected=tab==i,onClick={tab=i;if(i>0)svm.refresh()},icon={Text(listOf("⚡","🏆","◉")[i])},label={Text(label)},colors=NavigationBarItemDefaults.colors(selectedIconColor=Mint,selectedTextColor=Mint,indicatorColor=Raised,unselectedTextColor=Muted))}}},floatingActionButton={if(tab==0)FloatingActionButton(onClick={dialog=true},containerColor=Mint,contentColor=Ink){Text("+",fontSize=28.sp)}}){p->when(tab){0->Dashboard(Modifier.padding(p),quests,filter,ui.errorMessage,qvm,social.profile?.totalXp);1->Community(Modifier.padding(p),social,svm);else->Profile(Modifier.padding(p),social,auth)}};if(dialog)CreateDialog({dialog=false}){t,x,d->qvm.addQuest(t,x,d);dialog=false}}
 @Composable private fun Heading(kicker:String,title:String,sub:String?=null){Column{Text(kicker.uppercase(),color=Mint,fontSize=11.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp);Text(title,color=White,fontSize=26.sp,fontWeight=FontWeight.Bold);if(sub!=null)Text(sub,color=Muted,fontSize=12.sp)}}
-@Composable private fun Dashboard(mod:Modifier,quests:List<Quest>,filter:String,error:String?,vm:QuestViewModel,xpServer:Long?){val shown=when(filter){"ACTIVE"->quests.filter{!it.completed};"COMPLETED"->quests.filter{it.completed};else->quests};val xp=xpServer?:quests.filter{it.completed}.sumOf{(it.xp*it.difficulty.multiplier).toLong()};LazyColumn(mod.fillMaxSize(),contentPadding=PaddingValues(19.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){item{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column{Text("YOUR DAILY ADVENTURE",color=Muted,fontSize=10.sp,letterSpacing=1.5.sp);Text("Make today count.",color=White,fontSize=23.sp,fontWeight=FontWeight.Bold)}Text("⚡ LIFEQUEST",color=Mint,fontWeight=FontWeight.Bold)}};item{CardBox{Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("TOTAL EXPERIENCE",color=Muted,fontSize=10.sp);Text(xp.toString()+" XP",color=White,fontSize=31.sp,fontWeight=FontWeight.ExtraBold)}Text("LEVEL "+(xp/100+1),color=Mint,fontWeight=FontWeight.Bold)};LinearProgressIndicator(progress={(xp%100).toFloat()/100f},modifier=Modifier.fillMaxWidth().height(7.dp),color=Mint,trackColor=Raised);Text(quests.count{it.completed}.toString()+" of "+quests.size+" quests completed",color=Muted,fontSize=12.sp)}}};item{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Your quests",color=White,fontSize=19.sp,fontWeight=FontWeight.Bold);TextButton(onClick={vm.syncPending()}){Text("↻ Sync",color=Mint)}}};item{Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("ALL","ACTIVE","COMPLETED").forEach{f->FilterChip(selected=filter==f,onClick={vm.updateSelectedFilter(f)},label={Text(f.lowercase().replaceFirstChar{it.uppercase()})},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Mint,selectedLabelColor=Ink,labelColor=Muted))}}};if(error!=null)item{Text(error,color=Color(0xFFFFB4AB),fontSize=12.sp)};if(shown.isEmpty())item{CardBox{Column(Modifier.fillMaxWidth().padding(25.dp),horizontalAlignment=Alignment.CenterHorizontally){Text("✦",color=Mint,fontSize=30.sp);Text("No quests yet",color=White,fontWeight=FontWeight.Bold);Text("Add a small win and build momentum.",color=Muted,fontSize=12.sp)}}};items(shown,key={it.id}){q->QuestItem(q){vm.completeQuest(q.id)}}}}
+@Composable
+private fun Dashboard(
+    mod: Modifier,
+    quests: List<Quest>,
+    filter: String,
+    error: String?,
+    vm: QuestViewModel,
+    xpServer: Long?
+) {
+    val shown = when (filter) {
+        "ACTIVE" -> quests.filter { !it.completed }
+        "COMPLETED" -> quests.filter { it.completed }
+        else -> quests
+    }
+    val xp = xpServer ?: quests.filter { it.completed }
+        .sumOf { (it.xp * it.difficulty.multiplier).toLong() }
+
+    LazyColumn(
+        modifier = mod.fillMaxSize(),
+        contentPadding = PaddingValues(19.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("YOUR DAILY ADVENTURE", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                    Text("Make today count.", color = White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("⚡ LIFEQUEST", color = Mint, fontWeight = FontWeight.Bold)
+            }
+        }
+        item {
+            CardBox {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("TOTAL EXPERIENCE", color = Muted, fontSize = 10.sp)
+                            Text(xp.toString() + " XP", color = White, fontSize = 31.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        Text("LEVEL " + (xp / 100 + 1), color = Mint, fontWeight = FontWeight.Bold)
+                    }
+                    LinearProgressIndicator(
+                        progress = { (xp % 100).toFloat() / 100f },
+                        modifier = Modifier.fillMaxWidth().height(7.dp),
+                        color = Mint,
+                        trackColor = Raised
+                    )
+                    Text(
+                        quests.count { it.completed }.toString() + " of " + quests.size + " quests completed",
+                        color = Muted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Your quests", color = White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { vm.syncPending() }) {
+                    Text("↻ Sync", color = Mint)
+                }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("ALL", "ACTIVE", "COMPLETED").forEach { value ->
+                    FilterChip(
+                        selected = filter == value,
+                        onClick = { vm.updateSelectedFilter(value) },
+                        label = { Text(value.lowercase().replaceFirstChar { it.uppercase() }) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Mint,
+                            selectedLabelColor = Ink,
+                            labelColor = Muted
+                        )
+                    )
+                }
+            }
+        }
+        if (error != null) {
+            item { Text(error, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
+        }
+        if (shown.isEmpty()) {
+            item {
+                CardBox {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(25.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("✦", color = Mint, fontSize = 30.sp)
+                        Text("No quests yet", color = White, fontWeight = FontWeight.Bold)
+                        Text("Add a small win and build momentum.", color = Muted, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+        items(shown, key = { it.id }) { quest ->
+            QuestItem(quest) { vm.completeQuest(quest.id) }
+        }
+    }
+}
 @Composable private fun QuestItem(q:Quest,complete:()->Unit){CardBox{Row(Modifier.fillMaxWidth().padding(13.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)){Box(Modifier.size(38.dp).background(Raised,CircleShape),contentAlignment=Alignment.Center){Text(if(q.completed)"✓"else"✦",color=Mint)};Column(Modifier.weight(1f)){Text(q.title,color=White,fontWeight=FontWeight.SemiBold);Text(q.difficulty.name+" · "+q.xp+" base XP",color=Muted,fontSize=11.sp)};if(q.completed)Text("DONE",color=Mint,fontSize=11.sp,fontWeight=FontWeight.Bold)else Button(onClick=complete,contentPadding=PaddingValues(horizontal=11.dp,vertical=6.dp),colors=ButtonDefaults.buttonColors(containerColor=Mint,contentColor=Ink)){Text("Complete",fontSize=11.sp)}}}}
 @Composable
 private fun CreateDialog(
