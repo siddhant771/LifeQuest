@@ -11,8 +11,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -27,7 +25,7 @@ object NetworkModule {
         val request = chain.request()
         val path = request.url.encodedPath
         val isAuthCall = path.endsWith("/api/auth/login") || path.endsWith("/api/auth/register")
-        val token = if (isAuthCall) null else runBlocking { tokenManager.token.first() }
+        val token = if (isAuthCall) null else tokenManager.currentToken
         val builder = request.newBuilder()
         if (!token.isNullOrBlank()) builder.header("Authorization", "Bearer $token")
         chain.proceed(builder.build())
