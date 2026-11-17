@@ -36,6 +36,7 @@ class QuestSyncWorker(
         val tokens = dependencies.tokenManager()
         val remote = dependencies.remoteQuestRepository()
 
+        tokens.migrateLegacyToken()
         if (tokens.token.first().isNullOrBlank()) return Result.success()
 
         return try {
