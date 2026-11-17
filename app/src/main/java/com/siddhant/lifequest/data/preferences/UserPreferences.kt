@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
@@ -23,8 +24,8 @@ class UserPreferences @Inject constructor(
 ) {
 
     companion object {
-        private val SELECTED_FILTER =
-            stringPreferencesKey("selected_filter")
+        private val SELECTED_FILTER = stringPreferencesKey("selected_filter")
+        private val ACTIVE_USER_ID = longPreferencesKey("active_user_id")
     }
 
     val selectedFilter: Flow<String> =
@@ -39,6 +40,16 @@ class UserPreferences @Inject constructor(
             .map { preferences ->
                 preferences[SELECTED_FILTER] ?: "ALL"
             }
+
+    val activeUserId: Flow<Long?> = context.dataStore.data.map { it[ACTIVE_USER_ID] }
+
+    suspend fun saveActiveUserId(userId: Long) {
+        context.dataStore.edit { it[ACTIVE_USER_ID] = userId }
+    }
+
+    suspend fun clearActiveUserId() {
+        context.dataStore.edit { it.remove(ACTIVE_USER_ID) }
+    }
 
     suspend fun saveSelectedFilter(filter: String) {
         context.dataStore.edit { preferences ->
