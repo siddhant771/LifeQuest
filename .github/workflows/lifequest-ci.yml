@@ -27,10 +27,12 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" --install "platform-tools" "platforms;android-36"
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
       - name: Run staging unit tests
-        run: bash ./gradlew --no-daemon :app:testStagingDebugUnitTest
+        run: bash ./gradlew --no-daemon --stacktrace :app:testStagingDebugUnitTest
       - name: Assemble staging debug APK
-        run: bash ./gradlew --no-daemon :app:assembleStagingDebug
+        run: bash ./gradlew --no-daemon --stacktrace :app:assembleStagingDebug
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4

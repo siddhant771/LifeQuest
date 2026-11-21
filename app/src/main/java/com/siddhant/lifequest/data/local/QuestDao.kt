@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
  @Query("SELECT * FROM quests ORDER BY id") suspend fun getAllOnce():List<QuestEntity>
  @Query("SELECT * FROM quests WHERE pendingCreate=1 ORDER BY id") suspend fun getPendingCreates():List<QuestEntity>
  @Query("SELECT * FROM quests WHERE pendingCompletion=1 AND remoteId IS NOT NULL ORDER BY id") suspend fun getPendingCompletions():List<QuestEntity>
+ @Query("DELETE FROM quests") suspend fun deleteAll()
  @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun insertQuest(quest:QuestEntity)
  @Query("UPDATE quests SET remoteId=:remoteId,pendingCreate=0 WHERE id=:localId") suspend fun attachRemoteId(localId:Int,remoteId:Long)
  @Query("UPDATE quests SET clientRequestId=:requestId WHERE id=:localId AND clientRequestId IS NULL") suspend fun setClientRequestId(localId:Int,requestId:String)
