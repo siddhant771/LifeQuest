@@ -9,12 +9,13 @@ Controller owns HTTP mapping and principal extraction. Service owns business rul
 Registration normalizes email, validates input and hashes the password with BCrypt. Login verifies the hash and issues a signed JWT with user ID subject and expiry. Protected requests send Authorization: Bearer token. The filter verifies signature/expiry and sets SecurityContext. Controller must derive user ID from Authentication, never trust a body-supplied user ID. JWT is signed, not encrypted. Never put secrets in claims. Use TLS and short-lived access tokens. A refresh-token design needs secure storage, rotation and revocation.
 
 ## Quest completion correctness
-Completion should atomically lock a quest owned by the authenticated user, reject an already completed quest, calculate XP on server, update quest and user, update streak/achievements, insert a completion event, then commit. A transaction rolls back all database writes if a step fails. Pessimistic locking prevents concurrent transactions both seeing an incomplete quest. A unique DB constraint remains the final integrity boundary. Add a unique client idempotency key and handle duplicate-key conflicts as a stable response. Test real PostgreSQL locking; H2 is not a perfect substitute.
+Completion should atomically lock a quest owned by the authenticated user, reject an already completed quest, calculate XP on server, update quest and user, update streak/achievements, insert a completion event, then commit. A transaction rolls back all database writes if a step fails. Pessimistic locking prevents concurrent transactions both seeing an incomplete quest. A unique DB constraint remains the final integrity boundary. A unique client idempotency key makes retrying creates safe. Test real PostgreSQL locking; H2 is not a perfect substitute.
 
 ## Mockito vs integration tests
 Mockito unit tests isolate service logic: arrange mocks, call service, assert result/state, verify interactions. They do not prove SQL, Flyway, JPA mappings or lock behaviour. Add Spring integration tests with PostgreSQL Testcontainers for migrations, constraints and concurrency. Submit two completion requests concurrently and assert one event and one XP award.
 
-Commands:
+Commands (run from `lifequest-backend/`):
+
 ~~~bash
 ./mvnw test
 ./mvnw -Dtest=QuestServiceTest test
@@ -23,7 +24,16 @@ Commands:
 ~~~
 
 ## Docker local deployment
-Requirements: Docker Engine and Compose plugin. Copy .env.example to .env; generate unique local secrets; never commit .env. Build JAR from lifequest-backend using ./mvnw -B clean package -DskipTests. From repository root run docker compose up --build -d. Inspect docker compose ps and docker compose logs -f api. Check curl http://localhost:8080/actuator/health. Stop with docker compose down. The named database volume persists. docker compose down -v deletes local persisted data.
+Requirements: Docker Engine and Compose plugin. From the repository root, copy `.env.example` to `.env`, replace the placeholder secrets with unique local values, and run:
+
+~~~bash
+docker compose up --build -d
+docker compose ps
+docker compose logs -f api
+curl http://localhost:8080/actuator/health
+~~~
+
+The API image uses a multi-stage Docker build: it compiles the JAR from the backend source during `docker compose build`, then copies only the executable JAR into the runtime image. A prebuilt local `target/*.jar` is not required. Stop with `docker compose down`. The named database volume persists. `docker compose down -v` deletes local persisted data.
 
 Compose binds API to localhost only. Put a TLS reverse proxy/load balancer in front before remote access. Never expose Postgres/Redis publicly.
 
@@ -68,4 +78,4 @@ Stateless API instances scale horizontally; JWT avoids server sessions but compl
 20. How to recover from bad migration?
 
 ## Scope boundary
-This adds local Docker deployment and CI image build, not cloud deployment. Cloud deployment requires provider, domain, TLS, managed data services, secret manager, monitoring, backups and real credentials. Android API URLs remain placeholders until real endpoints exist.
+This provides local Docker deployment and CI image building, not cloud deployment. Cloud deployment requires a provider, domain, TLS, managed data services, secret manager, monitoring, backups and real credentials. Android API URLs remain placeholders until endpoints are deployed.
