@@ -5,6 +5,14 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
+
+// Override for a physical Android device with:
+// ./gradlew :app:installStagingDebug -PlifequestApiBaseUrl=http://192.168.1.10:8080/
+val lifeQuestApiBaseUrl = providers.gradleProperty("lifequestApiBaseUrl")
+    .orElse("http://10.0.2.2:8080/")
+    .get()
+    .let { if (it.endsWith("/")) it else "$it/" }
+
 android {
     namespace = "com.siddhant.lifequest"
     compileSdk = 36
@@ -31,7 +39,7 @@ android {
     buildTypes {
         debug {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            buildConfigField("String", "BASE_URL", "\"$lifeQuestApiBaseUrl\"")
         }
         release { }
     }
