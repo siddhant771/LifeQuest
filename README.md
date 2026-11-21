@@ -81,7 +81,9 @@ For an Android emulator using a local API on the host machine, build the debug v
 ./gradlew :app:assembleStagingDebug
 ```
 
-The debug build points to `http://10.0.2.2:8080/`, which reaches port 8080 on the host from the standard Android emulator. Start the backend stack first.
+The default debug build points to `http://10.0.2.2:8080/`, which reaches port 8080 on the host from the standard Android emulator. Start the backend stack first.
+
+For a physical Android phone on the same trusted Wi-Fi network, set `API_BIND_ADDRESS=0.0.0.0` in the local `.env` file, start the backend, and use the computer's LAN IPv4 address as the debug API URL. For example, run `./gradlew :app:installStagingDebug -PlifequestApiBaseUrl=http://192.168.1.10:8080/` after replacing the example address with the computer's actual IPv4 address. Allow inbound TCP port 8080 through the computer firewall only on the private network profile. Do not expose this development HTTP endpoint to the public internet. Restore `API_BIND_ADDRESS=127.0.0.1` when finished.
 
 The staging and production flavor URLs in `app/build.gradle.kts` are intentionally example hosts until a real API domain is deployed. Before a release build, replace those URLs with your HTTPS API endpoints and verify the endpoint from a physical device and the Play Store signing track. Do not ship `example.com` values.
 
