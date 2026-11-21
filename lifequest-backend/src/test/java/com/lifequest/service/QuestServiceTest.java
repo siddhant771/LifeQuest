@@ -131,7 +131,7 @@ class QuestServiceTest {
     void createQuestNormalizesDifficultyAndTitle() {
         User user = new User();
         CreateQuestRequest request = new CreateQuestRequest("  Read a book  ", 40, " medium ", "request-1");
-        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
         when(quests.save(any(Quest.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Quest created = service.createQuest(7L, request);
@@ -148,19 +148,20 @@ class QuestServiceTest {
     void createQuestReturnsExistingQuestForRepeatedClientRequestId() {
         User user = new User();
         Quest existing = quest(user, 25, "EASY", false);
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
         when(quests.findByUser_IdAndClientRequestId(7L, "same-request")).thenReturn(Optional.of(existing));
 
         Quest result = service.createQuest(
                 7L, new CreateQuestRequest("Different title", 100, "HARD", "same-request"));
 
         assertSame(existing, result);
-        verifyNoInteractions(users);
+        verify(users).findByIdForUpdate(7L);
         verify(quests, never()).save(any());
     }
 
     @Test
     void createQuestRejectsUnknownUser() {
-        when(users.findById(404L)).thenReturn(Optional.empty());
+        when(users.findByIdForUpdate(404L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> service.createQuest(
                 404L, new CreateQuestRequest("Read", 10, "EASY", null)));
@@ -170,7 +171,7 @@ class QuestServiceTest {
 
     @Test
     void createQuestRejectsUnsupportedDifficulty() {
-        when(users.findById(7L)).thenReturn(Optional.of(new User()));
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(new User()));
 
         assertThrows(IllegalArgumentException.class, () -> service.createQuest(
                 7L, new CreateQuestRequest("Read", 10, "IMPOSSIBLE", null)));
@@ -180,7 +181,7 @@ class QuestServiceTest {
 
     @Test
     void createQuestEnforcesDifficultyAdjustedXpLimit() {
-        when(users.findById(7L)).thenReturn(Optional.of(new User()));
+        when(users.findByIdForUpdate(7L)).thenReturn(Optional.of(new User()));
 
         assertThrows(IllegalArgumentException.class, () -> service.createQuest(
                 7L, new CreateQuestRequest("Read", 334, "HARD", null)));
