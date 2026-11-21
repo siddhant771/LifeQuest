@@ -37,7 +37,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       SERVER_PORT: 8080
     ports:
-      - "127.0.0.1:${SERVER_PORT:-8080}:8080"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
